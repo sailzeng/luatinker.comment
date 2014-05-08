@@ -551,6 +551,8 @@ T pop(lua_State *L)
 template<>  void    pop(lua_State *L);
 template<>  table   pop(lua_State *L);
 
+//注意functor 还有一组return void 的函数的偏特化函数
+
 // functor (with return value)
 template<typename RVal, typename T1 = void, typename T2 = void, typename T3 = void, typename T4 = void, typename T5 = void>
 struct functor
@@ -582,6 +584,9 @@ struct functor<RVal, T1, T2, T3>
     }
 };
 
+//以这个函数为基础讲解
+//push 压入堆栈
+//upvalue_
 template<typename RVal, typename T1, typename T2>
 struct functor<RVal, T1, T2>
 {
@@ -699,15 +704,20 @@ void push_functor(lua_State *L, RVal (*func)())
     lua_pushcclosure(L, functor<RVal>::invoke, 1);
 }
 
+
 template<typename RVal, typename T1>
 void push_functor(lua_State *L, RVal (*func)(T1))
 {
+    //
     lua_pushcclosure(L, functor<RVal, T1>::invoke, 1);
 }
 
+//只解释一个函数了RVal返回值，T1函数的参数
 template<typename RVal, typename T1, typename T2>
 void push_functor(lua_State *L, RVal (*func)(T1, T2))
 {
+    //放入的closue 是 functor<RVal, T1, T2>::invoke 一个static 函数
+    //最后的1表示有一个upvalue
     lua_pushcclosure(L, functor<RVal, T1, T2>::invoke, 1);
 }
 
@@ -1036,13 +1046,17 @@ int destroyer(lua_State *L)
     return 0;
 }
 
-// global function
+//定义一个全局函数，或者类的静态函数给lua调用
 template<typename F>
 void def(lua_State *L, const char *name, F func)
 {
+    //函数名称
     lua_pushstring(L, name);
+    //将函数指针转换为void * ，作为lightuserdata 放入堆栈，作为closure的upvalue放入
     lua_pushlightuserdata(L, (void *)func);
+    //模板函数，放入closure
     push_functor(L, func);
+    //将其放入全局环境
     lua_settable(L, LUA_GLOBALSINDEX);
 }
 
