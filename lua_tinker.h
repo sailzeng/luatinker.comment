@@ -312,17 +312,14 @@ struct void2ref
     }
 };
 
+//根据T的类型，决定将void *进行什么样的转换
 template<typename T>
 struct void2type
 {
     static T invoke(void *ptr)
     {
-        return  if_ < is_ptr<T>::value
-                , void2ptr<typename base_type<T>::type>
-                , typename if_ < is_ref<T>::value
-                , void2ref<typename base_type<T>::type>
-                , void2val<typename base_type<T>::type>
-                >::type
+        return  if_ < is_ptr<T>::value , void2ptr<typename base_type<T>::type> ,
+                typename if_ < is_ref<T>::value , void2ref<typename base_type<T>::type> , void2val<typename base_type<T>::type>  >::type
                 >::type::invoke(ptr);
     }
 };
@@ -334,6 +331,7 @@ struct user
     void *m_p;
 };
 
+//将用户push的user data信息进行转换，push light data 是void *
 template<typename T>
 struct user2type
 {
@@ -375,6 +373,7 @@ T lua2type(lua_State *L, int index)
             >::type::invoke(L, index);
 }
 
+//
 template<typename T>
 struct val2user : user
 {
@@ -455,6 +454,7 @@ struct enum2lua
     }
 };
 
+//
 template<typename T>
 struct object2lua
 {
@@ -476,6 +476,7 @@ struct object2lua
 template<typename T>
 void type2lua(lua_State *L, T val)
 {
+    //如果是枚举，就用枚举，如果不是呢，就用object
     if_ < is_enum<T>::value
     , enum2lua<T>
     , object2lua<T>
@@ -483,9 +484,13 @@ void type2lua(lua_State *L, T val)
 }
 
 // get value from cclosure
+//得到函数的，upvalue，帮助完成函数调用
+//T 是用户的类型，
+//根据要转换的的T进行操作。
 template<typename T>
 T upvalue_(lua_State *L)
 {
+    //
     return user2type<T>::invoke(L, lua_upvalueindex(1));
 }
 
@@ -515,6 +520,8 @@ template<>  unsigned long long  read(lua_State *L, int index);
 template<>  table               read(lua_State *L, int index);
 
 // push a value to lua stack
+
+//PUSH 东东给lua的，时候，一般的类型都有特化，但如果实在没有就用这个函数
 template<typename T>
 void push(lua_State *L, T ret)
 {
@@ -551,15 +558,30 @@ T pop(lua_State *L)
 template<>  void    pop(lua_State *L);
 template<>  table   pop(lua_State *L);
 
-//注意functor 还有一组return void 的函数的偏特化函数
 
 // functor (with return value)
+//LUA调用C函数的封装
+//注意functor 还有一组return void 的函数的偏特化函数
+//以这个函数为基础讲解
+//push 将结果RVal 压入堆栈
+//upvalue_ 其实是一个传统的static 函数调用类内部函数的方法，只不过upvalue_是通过LUA 特有的upvalue实现的
+//upvalue_ 最后返回的函数指针，通过函数指针完成函数调用
+//read 完成从堆栈读取参数的事情
+
 template<typename RVal, typename T1 = void, typename T2 = void, typename T3 = void, typename T4 = void, typename T5 = void>
 struct functor
 {
     static int invoke(lua_State *L)
     {
-        push(L, upvalue_<RVal( *)(T1, T2, T3, T4, T5)>(L)(read<T1>(L, 1), read<T2>(L, 2), read<T3>(L, 3), read<T4>(L, 4), read<T5>(L, 5)));
+        //push是将结果放入堆栈
+        push(L, 
+            upvalue_<RVal( *)(T1, T2, T3, T4, T5)>(L)(
+            read<T1>(L, 1),
+            read<T2>(L, 2), 
+            read<T3>(L, 3), 
+            read<T4>(L, 4), 
+            read<T5>(L, 5))
+            );
         return 1;
     }
 };
@@ -584,9 +606,7 @@ struct functor<RVal, T1, T2, T3>
     }
 };
 
-//以这个函数为基础讲解
-//push 压入堆栈
-//upvalue_
+
 template<typename RVal, typename T1, typename T2>
 struct functor<RVal, T1, T2>
 {
@@ -976,10 +996,21 @@ void push_functor(lua_State *L, RVal (T::*func)(T1, T2, T3, T4, T5) const)
 }
 
 // constructor
+//new 一个 userdata,对应class，同时完成构造函数，
+//同时设置userdata的metatable为class_add定义的那个metatable
 template<typename T, typename T1, typename T2, typename T3, typename T4, typename T5>
 int constructor(lua_State *L)
 {
-    new(lua_newuserdata(L, sizeof(val2user<T>))) val2user<T>(read<T1>(L, 2), read<T2>(L, 3), read<T3>(L, 4), read<T4>(L, 5), read<T5>(L, 6));
+    //new 一个user data，用val2user<T>的大小,同时，同时用placement new 的方式（指针式lua_newuserdata分配的），
+    //完成构造函数
+    //val2user<T> 是一个从user继承的类,user是一个包装void * 的类，
+    new(lua_newuserdata(L, sizeof(val2user<T>))) 
+        val2user<T>(
+        read<T1>(L, 2),
+        read<T2>(L, 3), 
+        read<T3>(L, 4), 
+        read<T4>(L, 5), 
+        read<T5>(L, 6));
     push_meta(L, class_name<typename class_type<T>::type>::name());
     lua_setmetatable(L, -2);
 
@@ -1054,17 +1085,21 @@ void def(lua_State *L, const char *name, F func)
     lua_pushstring(L, name);
     //将函数指针转换为void * ，作为lightuserdata 放入堆栈，作为closure的upvalue放入
     lua_pushlightuserdata(L, (void *)func);
-    //模板函数，放入closure
+    //模板函数，放入closure,func是模板参数
     push_functor(L, func);
-    //将其放入全局环境
+    //将其放入全局环境表中
     lua_settable(L, LUA_GLOBALSINDEX);
 }
 
 // global variable
+//全局变量的get set，
+
 template<typename T>
 void set(lua_State *L, const char *name, T object)
 {
+    //名称对象，
     lua_pushstring(L, name);
+    //模板函数，根据T绝对如何push
     push(L, object);
     lua_settable(L, LUA_GLOBALSINDEX);
 }
@@ -1082,6 +1117,8 @@ void decl(lua_State *L, const char *name, T object)
 {
     set(L, name, object);
 }
+
+//调用LUA的函数
 
 // call
 template<typename RVal>
@@ -1128,26 +1165,37 @@ RVal call(lua_State *L, const char *name, T1 arg)
     return pop<RVal>(L);
 }
 
+
+//以这个为例子讲解，
+//RVal 返回值
+//T1，T2参数
+
 template<typename RVal, typename T1, typename T2>
 RVal call(lua_State *L, const char *name, T1 arg1, T2 arg2)
 {
+    //放入错误处理的函数，并且记录堆栈的地址
     lua_pushcclosure(L, on_error, 0);
     int errfunc = lua_gettop(L);
 
     lua_pushstring(L, name);
     lua_gettable(L, LUA_GLOBALSINDEX);
+    //检查其是否是函数
     if (lua_isfunction(L, -1))
     {
+        //放入堆栈参数，arg1，arg2，
         push(L, arg1);
         push(L, arg2);
+        //调用lua的函数，默认只有一个返回值，
         lua_pcall(L, 2, 1, errfunc);
     }
     else
     {
         print_error(L, "lua_tinker::call() attempt to call global `%s' (not a function)", name);
     }
-
+    //在堆栈删除掉错误处理的函数
     lua_remove(L, errfunc);
+
+    //在堆栈弹出返回值
     return pop<RVal>(L);
 }
 
@@ -1181,26 +1229,35 @@ int meta_set(lua_State *L);
 void push_meta(lua_State *L, const char *name);
 
 // class init
+//类的初始化，让class能在lua中使用
+//定义类的metatable的表，或者说原型的表。
 template<typename T>
 void class_add(lua_State *L, const char *name)
 {
+    //绑定T和名称
     class_name<T>::name(name);
 
+    //类的名称
     lua_pushstring(L, name);
+    //new 一个table，这个table是作为其他的类的metatable的（某种程度上也可以说是原型），
     lua_newtable(L);
 
+    //__name不是标准的元方法，但在例子中有使用
     lua_pushstring(L, "__name");
     lua_pushstring(L, name);
     lua_rawset(L, -3);
 
+    //将meta_get函数作为__index函数
     lua_pushstring(L, "__index");
     lua_pushcclosure(L, meta_get, 0);
     lua_rawset(L, -3);
 
+    //将meta_set函数作为__index函数
     lua_pushstring(L, "__newindex");
     lua_pushcclosure(L, meta_set, 0);
     lua_rawset(L, -3);
 
+    //垃圾回收函数
     lua_pushstring(L, "__gc");
     lua_pushcclosure(L, destroyer<T>, 0);
     lua_rawset(L, -3);
@@ -1209,30 +1266,47 @@ void class_add(lua_State *L, const char *name)
 }
 
 // Tinker Class Inheritence
+//实现类的继承关系的方法，T和P都要先class_add
+
 template<typename T, typename P>
 void class_inh(lua_State *L)
 {
+    //根据子类的名称，取得子类的metatable的表，或者说原型。
     push_meta(L, class_name<T>::name());
+    //如果栈顶是一个表
     if (lua_istable(L, -1))
     {
+        //设置__parent 为 父类名称，目前不能多重继承
         lua_pushstring(L, "__parent");
         push_meta(L, class_name<P>::name());
         lua_rawset(L, -3);
     }
+    //从堆栈弹出push_meta取得的vlue
     lua_pop(L, 1);
 }
 
 // Tinker Class Constructor
+// T 是类
+// F 是构造函数的封装，lua_tinker::constructor
 template<typename T, typename F>
 void class_con(lua_State *L, F func)
 {
+    //根据类的名称，取得类的metatable的表，或者说原型。
     push_meta(L, class_name<T>::name());
+    //如果栈顶是一个表
     if (lua_istable(L, -1))
     {
+        //对这个类的metatable的表，设置一个metatable，在其中增加一个__call的对应函数
+        //这样的目的是这样的，__call是对应一个()调用，但实体不是函数式，的调用函数
+        //LUA中出现这样的调用，
+        //object =class_name()
         lua_newtable(L);
+        
         lua_pushstring(L, "__call");
         lua_pushcclosure(L, func, 0);
         lua_rawset(L, -3);
+        //设置这个table作为class 原型的metatable.
+        //或者说设置这个table作为class metatable的metatable.
         lua_setmetatable(L, -2);
     }
     lua_pop(L, 1);
@@ -1246,6 +1320,7 @@ void class_def(lua_State *L, const char *name, F func)
     if (lua_istable(L, -1))
     {
         lua_pushstring(L, name);
+        //注意这儿是类的成员指针（更加接近size_t），而不是实际的指针，所以这儿不能用light userdata
         new(lua_newuserdata(L, sizeof(F))) F(func);
         push_functor(L, func);
         lua_rawset(L, -3);
@@ -1257,6 +1332,7 @@ void class_def(lua_State *L, const char *name, F func)
 template<typename T, typename BASE, typename VAR>
 void class_mem(lua_State *L, const char *name, VAR BASE::*val)
 {
+    //根据类的名称，取得类的metatable
     push_meta(L, class_name<T>::name());
     if (lua_istable(L, -1))
     {
@@ -1267,6 +1343,7 @@ void class_mem(lua_State *L, const char *name, VAR BASE::*val)
     lua_pop(L, 1);
 }
 
+//用模板函数辅助帮忙实现一个方法，可以通过class 找到对应的类名称（注册到LUA的名称），
 template<typename T>
 struct class_name
 {

@@ -590,38 +590,53 @@ static void invoke_parent(lua_State *L)
 }
 
 /*---------------------------------------------------------------------------*/
+//LUA的程序通过这个函数完定义类的__index
+//这个函数的堆栈情况可以这样理解
+
+//-1,结果
+//-2，key
+//-3，metatable
+//-4,key
+//-5,table
 int lua_tinker::meta_get(lua_State *L)
 {
-    //dump_statck(L);
+    //要检查的数据在栈底部，取出得到其metatable放入栈顶
     lua_getmetatable(L, 1);
+    //复制栈底倒数第二个参数key，放入栈顶
     lua_pushvalue(L, 2);
-    //dump_statck(L);
+    //在metatable里面寻找key，
     lua_rawget(L, -2);
 
-    //dump_statck(L);
+    //如果是一个userdata
     if (lua_isuserdata(L, -1))
     {
+        //进行调用
         user2type<var_base *>::invoke(L, -1)->get(L);
+        //从堆栈移除这个key，对应的vlaue
         lua_remove(L, -2);
-        //dump_statck(L);
     }
+    //如果没有找到
     else if (lua_isnil(L, -1))
     {
+        //去掉
         lua_remove(L, -1);
+        //检查的他的父类里面是否有可以调用的
         invoke_parent(L);
+        //如果仍然是NULL
         if (lua_isnil(L, -1))
         {
             lua_pushfstring(L, "can't find '%s' class variable. (forgot registering class variable ?)", lua_tostring(L, 2));
             lua_error(L);
         }
     }
-
+    //删除掉metatable，
     lua_remove(L, -2);
-    //dump_statck(L);
+    
     return 1;
 }
 
 /*---------------------------------------------------------------------------*/
+//LUA的程序通过这个函数完成定义类的__newindex
 int lua_tinker::meta_set(lua_State *L)
 {
     dump_statck(L);
