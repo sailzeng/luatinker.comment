@@ -318,6 +318,7 @@ struct void2type
 {
     static T invoke(void *ptr)
     {
+        //if_有多层嵌套，你可以认为就是if  else{ if  else }
         return  if_ < is_ptr<T>::value , void2ptr<typename base_type<T>::type> ,
                 typename if_ < is_ref<T>::value , void2ref<typename base_type<T>::type> , void2val<typename base_type<T>::type>  >::type
                 >::type::invoke(ptr);
@@ -718,6 +719,7 @@ struct functor<int, lua_State *>
 };
 
 // push_functor
+//注释见最后一个函数
 template<typename RVal>
 void push_functor(lua_State *L, RVal (*func)())
 {
@@ -728,16 +730,13 @@ void push_functor(lua_State *L, RVal (*func)())
 template<typename RVal, typename T1>
 void push_functor(lua_State *L, RVal (*func)(T1))
 {
-    //
     lua_pushcclosure(L, functor<RVal, T1>::invoke, 1);
 }
 
-//只解释一个函数了RVal返回值，T1函数的参数
+
 template<typename RVal, typename T1, typename T2>
 void push_functor(lua_State *L, RVal (*func)(T1, T2))
 {
-    //放入的closue 是 functor<RVal, T1, T2>::invoke 一个static 函数
-    //最后的1表示有一个upvalue
     lua_pushcclosure(L, functor<RVal, T1, T2>::invoke, 1);
 }
 
@@ -752,10 +751,13 @@ void push_functor(lua_State *L, RVal (*func)(T1, T2, T3, T4))
 {
     lua_pushcclosure(L, functor<RVal, T1, T2, T3, T4>::invoke, 1);
 }
-
+//只解释一个函数了RVal返回值，
+//T1……T5函数的参数
 template<typename RVal, typename T1, typename T2, typename T3, typename T4, typename T5>
 void push_functor(lua_State *L, RVal (*func)(T1, T2, T3, T4, T5))
 {
+    //放入的closue 是 functor<RVal, T1, T2>::invoke 一个static 函数
+    //最后的1表示有一个upvalue
     lua_pushcclosure(L, functor<RVal, T1, T2, T3, T4, T5>::invoke, 1);
 }
 
@@ -983,12 +985,16 @@ void push_functor(lua_State *L, RVal (T::*func)(T1, T2, T3, T4) const)
     lua_pushcclosure(L, mem_functor<RVal, T, T1, T2, T3, T4>::invoke, 1);
 }
 
+//注意这儿，注意这儿呀。我就写一次注释，
+//push_functor 有2种，一种是针对类内部成员（非static）函数的，
+//mem_functor是成员函数的模版
 template<typename RVal, typename T, typename T1, typename T2, typename T3, typename T4, typename T5>
 void push_functor(lua_State *L, RVal (T::*func)(T1, T2, T3, T4, T5))
 {
     lua_pushcclosure(L, mem_functor<RVal, T, T1, T2, T3, T4, T5>::invoke, 1);
 }
 
+//针对成员函数函数的还有一种形式，const的，
 template<typename RVal, typename T, typename T1, typename T2, typename T3, typename T4, typename T5>
 void push_functor(lua_State *L, RVal (T::*func)(T1, T2, T3, T4, T5) const)
 {
