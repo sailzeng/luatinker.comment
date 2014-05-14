@@ -762,17 +762,25 @@ void push_functor(lua_State *L, RVal (*func)(T1, T2, T3, T4, T5))
 }
 
 // member variable
+//var_base 不是一个有模板的函数，这样就可以保证通过void * 转换为 var_base *
+//而通过var_base *的调用 get, set 帮忙恰恰能直接调用到真正的mem_var <T,V>
 struct var_base
 {
     virtual void get(lua_State *L) = 0;
     virtual void set(lua_State *L) = 0;
 };
 
+
+//T 为class 类型，
+//V 为变量类型
 template<typename T, typename V>
 struct mem_var : var_base
 {
     V T::*_var;
-    mem_var(V T::*val) : _var(val) {}
+    mem_var(V T::*val) : 
+        _var(val) 
+    {
+    }
     void get(lua_State *L)
     {
         push<if_<is_obj<V>::value, V &, V>::type>(L, read<T *>(L, 1)->*(_var));
@@ -1335,6 +1343,9 @@ void class_def(lua_State *L, const char *name, F func)
 }
 
 // Tinker Class Variables
+// T 绑定的类
+// VAR 是绑定的变量的类型，
+// BASE 成员所属的类，一般我认为T和BASE是一样的
 template<typename T, typename BASE, typename VAR>
 void class_mem(lua_State *L, const char *name, VAR BASE::*val)
 {
@@ -1343,6 +1354,7 @@ void class_mem(lua_State *L, const char *name, VAR BASE::*val)
     if (lua_istable(L, -1))
     {
         lua_pushstring(L, name);
+        //mem_var 继承与
         new(lua_newuserdata(L, sizeof(mem_var<BASE, VAR>))) mem_var<BASE, VAR>(val);
         lua_rawset(L, -3);
     }
