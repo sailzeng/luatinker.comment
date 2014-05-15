@@ -781,12 +781,16 @@ struct mem_var : var_base
         _var(val) 
     {
     }
+    //get是LUA读取的操作，也就是把C++的数据读取到LUA里面，所以是PUSH
     void get(lua_State *L)
     {
+        //read其实就是把类的对象的指针读取出来。
         push<if_<is_obj<V>::value, V &, V>::type>(L, read<T *>(L, 1)->*(_var));
     }
+    //
     void set(lua_State *L)
     {
+        //
         read<T *>(L, 1)->*(_var) = read<V>(L, 3);
     }
 };
