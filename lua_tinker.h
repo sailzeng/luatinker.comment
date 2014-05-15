@@ -1334,8 +1334,10 @@ void class_def(lua_State *L, const char *name, F func)
     if (lua_istable(L, -1))
     {
         lua_pushstring(L, name);
+        //这个类的函数指针作为upvalue_的。
         //注意这儿是类的成员指针（更加接近size_t），而不是实际的指针，所以这儿不能用light userdata
         new(lua_newuserdata(L, sizeof(F))) F(func);
+        //
         push_functor(L, func);
         lua_rawset(L, -3);
     }
@@ -1354,7 +1356,7 @@ void class_mem(lua_State *L, const char *name, VAR BASE::*val)
     if (lua_istable(L, -1))
     {
         lua_pushstring(L, name);
-        //mem_var 继承与
+        //mem_var 继承于var_base,实际调用的时候利用var_base的虚函数完成回调。
         new(lua_newuserdata(L, sizeof(mem_var<BASE, VAR>))) mem_var<BASE, VAR>(val);
         lua_rawset(L, -3);
     }
