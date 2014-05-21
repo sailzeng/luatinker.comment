@@ -159,9 +159,11 @@ void lua_tinker::init_u64(lua_State *L)
 /*---------------------------------------------------------------------------*/
 void lua_tinker::dofile(lua_State *L, const char *filename)
 {
+    //放入错误处理函数并且，记录堆栈地址
     lua_pushcclosure(L, on_error, 0);
     int errfunc = lua_gettop(L);
 
+    //
     if (luaL_loadfile(L, filename) == 0)
     {
         lua_pcall(L, 0, 1, errfunc);
@@ -184,9 +186,11 @@ void lua_tinker::dostring(lua_State *L, const char *buff)
 /*---------------------------------------------------------------------------*/
 void lua_tinker::dobuffer(lua_State *L, const char *buff, size_t len)
 {
+    //放入错误处理函数并且，记录堆栈地址
     lua_pushcclosure(L, on_error, 0);
     int errfunc = lua_gettop(L);
 
+    //
     if (luaL_loadbuffer(L, buff, len, "lua_tinker::dobuffer()") == 0)
     {
         lua_pcall(L, 0, 1, errfunc);
@@ -195,8 +199,9 @@ void lua_tinker::dobuffer(lua_State *L, const char *buff, size_t len)
     {
         print_error(L, "%s", lua_tostring(L, -1));
     }
-
+    //
     lua_remove(L, errfunc);
+    //移除错误的string
     lua_pop(L, 1);
 }
 
@@ -254,6 +259,7 @@ void lua_tinker::print_error(lua_State *L, const char *fmt, ...)
     vsprintf_s(text, fmt, args);
     va_end(args);
 
+    //你可以直接注册这个_ALERT名称对应的函数，用于错误处理。
     lua_pushstring(L, "_ALERT");
     lua_gettable(L, LUA_GLOBALSINDEX);
     if (lua_isfunction(L, -1))
