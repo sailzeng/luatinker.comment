@@ -10,6 +10,12 @@ extern "C"
 
 #include "lua_tinker.h"
 
+
+struct TestA
+{
+    int a = 0;
+};
+
 struct A
 {
     A(int v) :
@@ -75,6 +81,10 @@ int main()
     luaopen_base(L);
     // Lua 문자열 함수들을 로드한다.- string 사용
     luaopen_string(L);
+
+    lua_tinker::class_add<TestA>(L, "TestA");
+    lua_tinker::class_con<TestA>(L, lua_tinker::constructor<TestA>);
+
 
     // base 클래스를 Lua 에 추가한다.
     lua_tinker::class_add<base>(L, "base");
