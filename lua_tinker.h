@@ -374,7 +374,10 @@ T lua2type(lua_State *L, int index)
             >::type::invoke(L, index);
 }
 
-//
+//T是注册的类型
+//从user继承的类，用于帮助完成构造类，同时通过user基类提供析构释放的方法，
+//非要用这种转换的方式，而不直接用T，原因是？
+//我的感觉是因为为了变参的构造函数，感觉在C11下没有必要？C11可以直接完成变参了。
 template<typename T>
 struct val2user : user
 {
@@ -383,6 +386,7 @@ struct val2user : user
     template<typename T1>
     val2user(T1 t1) : user(new T(t1)) {}
 
+    //T1,T2是构造函数的参数
     template<typename T1, typename T2>
     val2user(T1 t1, T2 t2) : user(new T(t1, t2)) {}
 
@@ -395,7 +399,8 @@ struct val2user : user
     template<typename T1, typename T2, typename T3, typename T4, typename T5>
     val2user(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5) : user(new T(t1, t2, t3, t4, t5)) {}
 
-    ~val2user()
+    //辅助完成析构,原作好像少了virtual
+    virtual ~val2user()
     {
         delete ((T *)m_p);
     }
@@ -422,6 +427,8 @@ struct val2lua
         new(lua_newuserdata(L, sizeof(val2user<T>))) val2user<T>(input);
     }
 };
+
+//
 template<typename T>
 struct ptr2lua
 {
@@ -446,6 +453,7 @@ struct ref2lua
     }
 };
 
+//enum只是被当做整数使用
 template<typename T>
 struct enum2lua
 {
@@ -455,14 +463,13 @@ struct enum2lua
     }
 };
 
-//
+//我不知道为什么要样这种方式转换object？直接使用特化函数不是一样可以达到效果吗？
 template<typename T>
 struct object2lua
 {
     static void invoke(lua_State *L, T val)
     {
-        if_ < is_ptr<T>::value
-        , ptr2lua<typename base_type<T>::type>
+        if_ < is_ptr<T>::value , ptr2lua<typename base_type<T>::type>
         , typename if_ < is_ref<T>::value
         , ref2lua<typename base_type<T>::type>
         , val2lua<typename base_type<T>::type>
@@ -781,12 +788,16 @@ struct mem_var : var_base
         _var(val) 
     {
     }
+    //get是LUA读取的操作，也就是把C++的数据读取到LUA里面，所以是PUSH
     void get(lua_State *L)
     {
+        //read其实就是把类的对象的指针读取出来。
         push<if_<is_obj<V>::value, V &, V>::type>(L, read<T *>(L, 1)->*(_var));
     }
+    //
     void set(lua_State *L)
     {
+        //
         read<T *>(L, 1)->*(_var) = read<V>(L, 3);
     }
 };
