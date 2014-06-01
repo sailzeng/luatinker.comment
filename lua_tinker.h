@@ -1075,6 +1075,7 @@ int constructor(lua_State *L)
 
 template<typename T>
 int constructor(lua_State *L)
+-¡¤
 {
     new(lua_newuserdata(L, sizeof(val2user<T>))) val2user<T>();
     push_meta(L, class_name<typename class_type<T>::type>::name());
