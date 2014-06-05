@@ -1,7 +1,8 @@
+tempa = TestA()
 temp01 = test(1024)
+tempb = temp01._testa
 
 g_test._test = 12
-
 g_test._test = 15
 
 

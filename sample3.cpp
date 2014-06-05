@@ -68,6 +68,8 @@ public:
     }
 
     int _test;
+
+    TestA _testa;
 };
 
 test g_test(11);
@@ -105,6 +107,7 @@ int main()
     lua_tinker::class_def<test>(L, "get", &test::get);
     lua_tinker::class_def<test>(L, "set", &test::set);
     lua_tinker::class_mem<test>(L, "_test", &test::_test);
+    lua_tinker::class_mem<test>(L, "_testa", &test::_testa);
 
     // Lua 전역 변수호 g_test 의 포인터를 등록한다.
     lua_tinker::set(L, "g_test", &g_test);

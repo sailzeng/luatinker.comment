@@ -418,6 +418,9 @@ struct ref2user : user
     ref2user(T &t) : user(&t) {}
 };
 
+
+//将一些结构转换给lua，其用了很多模板干活，其实用C11的新特性，十分可以写的更加简单一点，
+//直接在push函数上实现了。
 // to lua
 template<typename T>
 struct val2lua
