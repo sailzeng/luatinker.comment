@@ -270,6 +270,7 @@ void lua_tinker::print_error(lua_State *L, const char *fmt, ...)
     else
     {
         printf("%s\n", text);
+        //如果弹出的不是函数，
         lua_pop(L, 1);
     }
 }
@@ -396,6 +397,7 @@ bool lua_tinker::read(lua_State *L, int index)
     {
         return lua_toboolean(L, index) != 0;
     }
+    //这儿的目的是为了什么？避免一个不是bool的类型转换失败？
     else
     {
         return lua_tonumber(L, index) != 0;

@@ -1089,6 +1089,7 @@ int constructor(lua_State *L)
 
 template<typename T>
 int constructor(lua_State *L)
+-·
 {
     new(lua_newuserdata(L, sizeof(val2user<T>))) val2user<T>();
     push_meta(L, class_name<typename class_type<T>::type>::name());
@@ -1097,7 +1098,9 @@ int constructor(lua_State *L)
     return 1;
 }
 
-// destroyer
+//帮助垃圾回收器调用析构函数
+//其实从这个代码上看，没有必要用模版函数<T>，他是直接用user基类依靠虚函数搞掂的。
+//整个函数没有地方用到了T，
 template<typename T>
 int destroyer(lua_State *L)
 {
