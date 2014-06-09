@@ -647,11 +647,11 @@ int lua_tinker::meta_get(lua_State *L)
 //LUA的程序通过这个函数完成定义类的__newindex
 int lua_tinker::meta_set(lua_State *L)
 {
-    dump_statck(L);
+    enum_stack(L);
     lua_getmetatable(L, 1);
     lua_pushvalue(L, 2);
     lua_rawget(L, -2);
-    dump_statck(L);
+    enum_stack(L);
 
     if (lua_isuserdata(L, -1))
     {
@@ -801,37 +801,3 @@ lua_tinker::table::~table()
 
 /*---------------------------------------------------------------------------*/
 
-
-
-void lua_tinker::dump_statck(lua_State *L)
-{
-    int i, debug_lvl;
-    int top = lua_gettop(L);
-
-    printf("%s", "==============================================================\n");
-    printf("total in stack %d \n", top);
-
-    for (i = 1; i <= top; i++)
-    {
-        debug_lvl = i * (-1);
-        /* repeat for each level */
-        int t = lua_type(L, debug_lvl);
-        printf("%2d.", i);
-        switch (t)
-        {
-            case LUA_TSTRING:  /* strings */
-                printf("string: '%s'\n", lua_tostring(L, debug_lvl));
-                break;
-            case LUA_TBOOLEAN:  /* booleans */
-                printf("boolean %s\n", lua_toboolean(L, debug_lvl) ? "true" : "false");
-                break;
-            case LUA_TNUMBER:  /* numbers */
-                printf("number: %g\n", lua_tonumber(L, debug_lvl));
-                break;
-            default:  /* other values */
-                printf("%s\n", lua_typename(L, t));
-                break;
-        }
-    }
-    printf("\n");  /* end the listing */
-}

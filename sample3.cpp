@@ -87,6 +87,10 @@ int main()
     lua_tinker::class_add<TestA>(L, "TestA");
     lua_tinker::class_con<TestA>(L, lua_tinker::constructor<TestA>);
 
+    TestA *ptr_a = new TestA();
+
+    lua_tinker::set(L, "ptr_a", ptr_a);
+
 
     // base 클래스를 Lua 에 추가한다.
     lua_tinker::class_add<base>(L, "base");
