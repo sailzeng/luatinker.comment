@@ -377,7 +377,9 @@ T lua2type(lua_State *L, int index)
 //T是注册的类型
 //从user继承的类，用于帮助完成构造类，同时通过user基类提供析构释放的方法，
 //非要用这种转换的方式，而不直接用T，原因是？
-//我的感觉是因为为了变参的构造函数，感觉在C11下没有必要？C11可以直接完成变参了。
+//原来我的感觉是因为为了变参的构造函数，感觉在C11下没有必要？C11可以直接完成变参了。
+//后来发现其实其还对val，ptr，ref做了考虑， 当然这个考虑未必完整。
+
 template<typename T>
 struct val2user : user
 {
@@ -418,11 +420,16 @@ struct ref2user : user
     ref2user(T &t) : user(&t) {}
 };
 
+
+//将一些结构转换给lua，其用了很多模板干活，
+//原来以为这层代码是可以简化的，但后来发现其实tinker对ptr，ref的考虑
+//是封装了指针给LUA，所以其对ptr，ref都有很多再次封装，这点上可能不能简化
+
 // to lua
 template<typename T>
 struct val2lua
 {
-    static void invoke(lua_State *L, T &input)
+    static void invoke(lua_State *L, T input)
     {
         new(lua_newuserdata(L, sizeof(val2user<T>))) val2user<T>(input);
     }
@@ -476,6 +483,7 @@ struct object2lua
         >::type
         >::type::invoke(L, val);
 
+        //注意这个地方，其通过class_type<T>::type 萃取出来实际的类型，
         push_meta(L, class_name<typename class_type<T>::type>::name());
         lua_setmetatable(L, -2);
     }
@@ -792,6 +800,7 @@ struct mem_var : var_base
     void get(lua_State *L)
     {
         //read其实就是把类的对象的指针读取出来。
+        //注意这个地方使用的是引用
         push<if_<is_obj<V>::value, V &, V>::type>(L, read<T *>(L, 1)->*(_var));
     }
     //
@@ -1078,12 +1087,12 @@ int constructor(lua_State *L)
 template<typename T, typename T1>
 int constructor(lua_State *L)
 {
-    dump_statck(L);
+    enum_stack(L);
     new(lua_newuserdata(L, sizeof(val2user<T>))) val2user<T>(read<T1>(L, 2));
     push_meta(L, class_name<typename class_type<T>::type>::name());
-    dump_statck(L);
+    enum_stack(L);
     lua_setmetatable(L, -2);
-    dump_statck(L);
+    enum_stack(L);
     return 1;
 }
 
@@ -1100,6 +1109,9 @@ int constructor(lua_State *L)
 //帮助垃圾回收器调用析构函数
 //其实从这个代码上看，没有必要用模版函数<T>，他是直接用user基类依靠虚函数搞掂的。
 //整个函数没有地方用到了T，
+//调用USER_DATA的基类的析构,由于user其实是一个LUA使用的userdata对象的基类，
+//其子类包括3种，val,ptr,ref,其中val的析构会释放对象，ptr，ref的对象什么都不会做，
+//这样就保证无论你传递给LUA什么，他们的生命周期都是正确的，
 template<typename T>
 int destroyer(lua_State *L)
 {
@@ -1463,9 +1475,6 @@ struct table
     table_obj      *m_obj;
 };
 
-
-//
-void dump_statck(lua_State *L);
 
 
 } // namespace lua_tinker
