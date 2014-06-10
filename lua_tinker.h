@@ -1029,6 +1029,9 @@ int constructor(lua_State *L)
     //new 一个user data，用val2user<T>的大小,同时，同时用placement new 的方式（指针式lua_newuserdata分配的），
     //完成构造函数
     //val2user<T> 是一个从user继承的类,user是一个包装void * 的类，
+    //这样的封装，让meta_get，和meta_set的调用称为了可能，
+    //meta_get，meta_set其实没有模版信息，而meta_get和meta_get是在class 注册的时候使用的，
+    //那时候还没有注册对象成员
     new(lua_newuserdata(L, sizeof(val2user<T>))) 
         val2user<T>(
         read<T1>(L, 2),
@@ -1086,7 +1089,6 @@ int constructor(lua_State *L)
 
 template<typename T>
 int constructor(lua_State *L)
--·
 {
     new(lua_newuserdata(L, sizeof(val2user<T>))) val2user<T>();
     push_meta(L, class_name<typename class_type<T>::type>::name());
