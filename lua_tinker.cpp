@@ -279,37 +279,37 @@ void lua_tinker::print_error(lua_State *L, const char *fmt, ...)
 void lua_tinker::enum_stack(lua_State *L)
 {
     int top = lua_gettop(L);
-    print_error(L, "Type:%d", top);
+    print_error(L, "Stack have:%d level.", top);
     for (int i = 1; i <= lua_gettop(L); ++i)
     {
         switch (lua_type(L, i))
         {
             case LUA_TNIL:
-                print_error(L, "\t%s", lua_typename(L, lua_type(L, i)));
+                print_error(L, "\t%4d.%s", i,lua_typename(L, lua_type(L, i)));
                 break;
             case LUA_TBOOLEAN:
-                print_error(L, "\t%s	%s", lua_typename(L, lua_type(L, i)), lua_toboolean(L, i) ? "true" : "false");
+                print_error(L, "\t%4d.%s	%s", i, lua_typename(L, lua_type(L, i)), lua_toboolean(L, i) ? "true" : "false");
                 break;
             case LUA_TLIGHTUSERDATA:
-                print_error(L, "\t%s	0x%08p", lua_typename(L, lua_type(L, i)), lua_topointer(L, i));
+                print_error(L, "\t%4d.%s	0x%08p", i, lua_typename(L, lua_type(L, i)), lua_topointer(L, i));
                 break;
             case LUA_TNUMBER:
-                print_error(L, "\t%s	%f", lua_typename(L, lua_type(L, i)), lua_tonumber(L, i));
+                print_error(L, "\t%4d.%s	%f", i, lua_typename(L, lua_type(L, i)), lua_tonumber(L, i));
                 break;
             case LUA_TSTRING:
-                print_error(L, "\t%s	%s", lua_typename(L, lua_type(L, i)), lua_tostring(L, i));
+                print_error(L, "\t%4d.%s	%s", i, lua_typename(L, lua_type(L, i)), lua_tostring(L, i));
                 break;
             case LUA_TTABLE:
-                print_error(L, "\t%s	0x%08p", lua_typename(L, lua_type(L, i)), lua_topointer(L, i));
+                print_error(L, "\t%4d.%s	0x%08p", i, lua_typename(L, lua_type(L, i)), lua_topointer(L, i));
                 break;
             case LUA_TFUNCTION:
-                print_error(L, "\t%s()	0x%08p", lua_typename(L, lua_type(L, i)), lua_topointer(L, i));
+                print_error(L, "\t%4d.%s()	0x%08p", i, lua_typename(L, lua_type(L, i)), lua_topointer(L, i));
                 break;
             case LUA_TUSERDATA:
-                print_error(L, "\t%s	0x%08p", lua_typename(L, lua_type(L, i)), lua_topointer(L, i));
+                print_error(L, "\t%4d.%s	0x%08p", i, lua_typename(L, lua_type(L, i)), lua_topointer(L, i));
                 break;
             case LUA_TTHREAD:
-                print_error(L, "\t%s", lua_typename(L, lua_type(L, i)));
+                print_error(L, "\t%4d.%s", i, lua_typename(L, lua_type(L, i)));
                 break;
         }
     }
@@ -600,20 +600,25 @@ static void invoke_parent(lua_State *L)
 /*---------------------------------------------------------------------------*/
 //LUA的程序通过这个函数完定义类的__index
 //这个函数的堆栈情况可以这样理解
-
+//第一次enum_stack时
 //-1,结果
 //-2，key
 //-3，metatable
 //-4,key
-//-5,table
 int lua_tinker::meta_get(lua_State *L)
 {
+
     //要检查的数据在栈底部，取出得到其metatable放入栈顶
     lua_getmetatable(L, 1);
     //复制栈底倒数第二个参数key，放入栈顶
     lua_pushvalue(L, 2);
+
+    enum_stack(L);
+
     //在metatable里面寻找key，
     lua_rawget(L, -2);
+
+    enum_stack(L);
 
     //如果是一个userdata
     if (lua_isuserdata(L, -1))
@@ -622,6 +627,7 @@ int lua_tinker::meta_get(lua_State *L)
         user2type<var_base *>::invoke(L, -1)->get(L);
         //从堆栈移除这个key，对应的vlaue
         lua_remove(L, -2);
+        enum_stack(L);
     }
     //如果没有找到
     else if (lua_isnil(L, -1))
