@@ -4,3 +4,6 @@ print("cpp_int = "..cpp_int)
 
 -- Lua 쪽 변수에 값을 할당한다.
 lua_int = 200
+
+
+cpp_int_ptr = 400

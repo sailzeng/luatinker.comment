@@ -625,7 +625,7 @@ int lua_tinker::meta_get(lua_State *L)
     {
         //进行调用
         user2type<var_base *>::invoke(L, -1)->get(L);
-        //从堆栈移除这个key，对应的vlaue
+        //从堆栈移除userdata.
         lua_remove(L, -2);
         enum_stack(L);
     }
@@ -642,6 +642,7 @@ int lua_tinker::meta_get(lua_State *L)
             lua_pushfstring(L, "can't find '%s' class variable. (forgot registering class variable ?)", lua_tostring(L, 2));
             lua_error(L);
         }
+		//这儿是有问题的，其实没有调用父类的数据。
     }
     //删除掉metatable，
     lua_remove(L, -2);

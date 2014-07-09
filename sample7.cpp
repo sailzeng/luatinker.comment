@@ -16,6 +16,12 @@ struct TestA
     TestA(int a) :a_(a)
     {
     }
+
+    int set(int a)
+    {
+        a_ = a;
+        return a_;
+    }
     int a_;
 };
 
@@ -32,7 +38,10 @@ int main()
     luaopen_string(L);
 
     lua_tinker::class_add<TestA>(L, "TestA");
-    lua_tinker::class_con<TestA>(L, lua_tinker::constructor<TestA,int>);
+    lua_tinker::class_def<TestA>(L, "set", &TestA::set);
+    lua_tinker::class_con<TestA>(L, lua_tinker::constructor<TestA, int>);
+    lua_tinker::class_mem<TestA>(L, "a_",&TestA::a_);
+
 
     TestA *ptr_a = new TestA(100);
     lua_tinker::set(L, "ptr_a", ptr_a);
@@ -42,7 +51,7 @@ int main()
 
     TestA temp_a(300);
     TestA &ref_a = temp_a;
-    lua_tinker::set(L, "ref_a", ref_a);
+    lua_tinker::set<TestA &>(L, "ref_a", ref_a);
 
     // sample7.lua
     lua_tinker::dofile(L, "sample7.lua");

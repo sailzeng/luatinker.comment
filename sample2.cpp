@@ -20,10 +20,15 @@ int main()
 	// Lua 기본 함수들을 로드한다.- print() 사용
 	luaopen_base(L);
 
-	// LuaTinker 를 이용해서 cpp_int 를 Lua에 전달
+	// 
 	lua_tinker::set(L, "cpp_int", cpp_int);
 
-	// sample1.lua 파일을 로드/실행한다.
+    lua_tinker::set(L, "cpp_int_ptr", &cpp_int);
+    int * abc = &cpp_int;
+    int * def= lua_tinker::get<int *>(L, "cpp_int_ptr");
+    printf("abc = %d,def=%d \n",*abc ,*def);
+
+	//
 	lua_tinker::dofile(L, "sample2.lua");
 
 	// sample1.lua 의 함수를 호출한다.
@@ -31,6 +36,8 @@ int main()
 
 	// lua_int 값 출력
 	printf("lua_int = %d\n", lua_int);
+
+    printf("cpp_int = %d\n", cpp_int);
 
 	// 프로그램 종료
 	lua_close(L);

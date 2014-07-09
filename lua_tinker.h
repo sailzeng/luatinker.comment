@@ -484,6 +484,7 @@ struct object2lua
         >::type::invoke(L, val);
 
         //注意这个地方，其通过class_type<T>::type 萃取出来实际的类型，
+        //class_type会去掉引用等信息
         push_meta(L, class_name<typename class_type<T>::type>::name());
         lua_setmetatable(L, -2);
     }

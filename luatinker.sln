@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30110.0
+VisualStudioVersion = 12.0.30501.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "luatinker.sample1", "luatinker.sample1.vcxproj", "{1536B8E6-0120-4B5E-90D4-1D2CB4838277}"
 EndProject
@@ -16,6 +16,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "luatinker.sample6", "luatinker.sample6.vcxproj", "{CE24C7D5-399E-417B-877C-E599935D39B8}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "luatinker.sample7", "luatinker.sample7.vcxproj", "{A88EF49E-A28D-4191-A940-B0F7BB9AD303}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "luatinker.sample8", "luatinker.sample8.vcxproj", "{30378682-DE32-48DD-8C6F-EE2D7EF781F6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,10 @@ Global
 		{A88EF49E-A28D-4191-A940-B0F7BB9AD303}.Debug|Win32.Build.0 = Debug|Win32
 		{A88EF49E-A28D-4191-A940-B0F7BB9AD303}.Release|Win32.ActiveCfg = Release|Win32
 		{A88EF49E-A28D-4191-A940-B0F7BB9AD303}.Release|Win32.Build.0 = Release|Win32
+		{30378682-DE32-48DD-8C6F-EE2D7EF781F6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{30378682-DE32-48DD-8C6F-EE2D7EF781F6}.Debug|Win32.Build.0 = Debug|Win32
+		{30378682-DE32-48DD-8C6F-EE2D7EF781F6}.Release|Win32.ActiveCfg = Release|Win32
+		{30378682-DE32-48DD-8C6F-EE2D7EF781F6}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
