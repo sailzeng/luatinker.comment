@@ -75,6 +75,12 @@ int main()
     lua_pushstring(L1, "ThreadTest");
     lua_gettable(L1, LUA_GLOBALSINDEX);
 
+    printf("L stack ========================================\n");
+    lua_tinker::enum_stack(L);
+    printf("L1 stack ========================================\n");
+    lua_tinker::enum_stack(L1);
+    printf("========================================\n");
+
     // Thread 를 시작한다.
     printf("* lua_resume() to.. \n");
     lua_resume(L1, 0);
