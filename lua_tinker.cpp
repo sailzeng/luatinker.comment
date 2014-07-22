@@ -642,7 +642,7 @@ int lua_tinker::meta_get(lua_State *L)
             lua_pushfstring(L, "can't find '%s' class variable. (forgot registering class variable ?)", lua_tostring(L, 2));
             lua_error(L);
         }
-		//这儿是有问题的，其实没有调用父类的数据。
+        //这儿是有问题的，其实没有调用父类的数据。
     }
     //删除掉metatable，
     lua_remove(L, -2);
