@@ -35,7 +35,8 @@ void lua_tinker::init(lua_State *L)
 static int tostring_s64(lua_State *L)
 {
     char temp[64];
-    sprintf_s(temp, "%I64d", *(long long *)lua_topointer(L, 1));
+    //%I64d这样古老的标签，
+    sprintf_s(temp, "%lld", *(long long *)lua_topointer(L, 1));
     lua_pushstring(L, temp);
     return 1;
 }
@@ -98,7 +99,8 @@ void lua_tinker::init_s64(lua_State *L)
 static int tostring_u64(lua_State *L)
 {
     char temp[64];
-    sprintf_s(temp, "%I64u", *(unsigned long long *)lua_topointer(L, 1));
+    //%I64u这样古老的标签，
+    sprintf_s(temp, "%llu", *(unsigned long long *)lua_topointer(L, 1));
     lua_pushstring(L, temp);
     return 1;
 }
@@ -778,8 +780,10 @@ lua_tinker::table::table(lua_State *L, const char *name)
         lua_pushvalue(L, -2);
         lua_settable(L, LUA_GLOBALSINDEX);
     }
-
+    
     m_obj = new table_obj(L, lua_gettop(L));
+    //原来作者这个地方写漏了一个引用增加
+    m_obj->inc_ref();
 }
 
 lua_tinker::table::table(lua_State *L, int index)

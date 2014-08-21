@@ -782,6 +782,9 @@ void push_functor(lua_State *L, RVal (*func)(T1, T2, T3, T4, T5))
 //而通过var_base *的调用 get, set 帮忙恰恰能直接调用到真正的mem_var <T,V>
 struct var_base
 {
+    //原来作者这个地方写漏了一个析构处理
+    virtual var_base();
+
     virtual void get(lua_State *L) = 0;
     virtual void set(lua_State *L) = 0;
 };
