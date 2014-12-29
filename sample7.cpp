@@ -51,6 +51,8 @@ int main()
 
     TestA temp_a(300);
     TestA &ref_a = temp_a;
+    //下面的写法是无法得到引用的，必须显式指定参数。
+    //lua_tinker::set(L, "ref_a", ref_a);
     lua_tinker::set<TestA &>(L, "ref_a", ref_a);
 
     // sample7.lua
